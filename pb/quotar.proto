@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package pb;
+
+service Quotar {
+    rpc CreateDir (CreateDirReq) returns (CreateDirResp);
+}
+
+message CreateDirReq {
+    string name = 1;
+    int64 size = 2;
+}
+
+message CreateDirResp {
+
+}

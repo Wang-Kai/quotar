@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/Wang-Kai/quotar/pb"
 	"github.com/Wang-Kai/quotar/pkg/svc"
@@ -21,6 +22,9 @@ func main() {
 	}
 
 	s := grpc.NewServer()
+
+	// for grpc debug
+	reflection.Register(s)
 	pb.RegisterQuotarServer(s, &svc.QuotarService{})
 
 	if err := s.Serve(lis); err != nil {

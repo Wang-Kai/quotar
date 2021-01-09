@@ -8,9 +8,9 @@ service Quotar {
 
 message CreateDirReq {
     string name = 1;
-    int64 size = 2;
+    string quota = 2;
 }
 
 message CreateDirResp {
-    int32 ret_code = 1;
+    string path = 1;
 }

@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"sync/atomic"
+
+	"github.com/Wang-Kai/quotar/pkg/conf"
 )
 
 const (
@@ -13,16 +15,19 @@ const (
 )
 
 // CreatePrj
-func CreatePrj(name, path, workspace string, size int64) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		// TODO: wrap error
-		return err
+func CreatePrj(name, quota string) error {
+	// create project directory
+	prjPath := fmt.Sprintf("%s/%s", conf.WORKSPACE, name)
+	if _, err := os.Stat(prjPath); os.IsNotExist(err) {
+		if err := os.Mkdir(prjPath, os.ModeDir|0755); err != nil {
+			return err
+		}
 	}
 
 	var prjID = genPrjID()
 
 	// insert the mapping of project ID and directory
-	var mappingIDAndDir = fmt.Sprintf("%s:%s\n", prjID, path)
+	var mappingIDAndDir = fmt.Sprintf("%s:%s\n", prjID, prjPath)
 
 	projectsFilePointer, err := os.OpenFile(FILE_PROJECTS, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -37,6 +42,7 @@ func CreatePrj(name, path, workspace string, size int64) error {
 
 	// insert the mapping of project name and project ID
 	var mappingNameAndID = fmt.Sprintf("%s:%s\n", name, prjID)
+
 	projidFilePointer, err := os.OpenFile(FILE_PROJID, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
@@ -49,14 +55,14 @@ func CreatePrj(name, path, workspace string, size int64) error {
 	}
 
 	// init xfs quota project
-	initQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'project -s %s' %s", name, workspace)
+	initQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'project -s %s' %s", name, conf.WORKSPACE)
 	initQuotaExecCmd := exec.Command("bash", "-c", initQuotaCmd)
 	if err := initQuotaExecCmd.Run(); err != nil {
 		return err
 	}
 
 	// limit project quota
-	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%dm bhard=%dm %s' %s", size, size, name, workspace)
+	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%s bhard=%s %s' %s", quota, quota, name, conf.WORKSPACE)
 	limitQuotaExecCmd := exec.Command("sh", "-c", limitQuotaCmd)
 	if err := limitQuotaExecCmd.Run(); err != nil {
 		return err

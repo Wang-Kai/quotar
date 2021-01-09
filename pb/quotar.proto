@@ -12,5 +12,5 @@ message CreateDirReq {
 }
 
 message CreateDirResp {
-
+    int32 ret_code = 1;
 }

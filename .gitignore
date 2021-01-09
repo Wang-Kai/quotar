@@ -16,3 +16,6 @@
 .vscode
 
 ./bin
+
+# just record proto files
+./pb/*.go

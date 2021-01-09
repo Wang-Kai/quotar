@@ -15,7 +15,7 @@
 # vendor/
 .vscode
 
-./bin
+bin
 
 # just record proto files
-./pb/*.go
+pb/*.go

@@ -1,9 +1,13 @@
 package xfs
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"github.com/Wang-Kai/quotar/pkg/conf"
@@ -71,11 +75,42 @@ func CreatePrj(name, quota string) error {
 	return nil
 }
 
-// genPrjID generate project ID while add xfs project
-// the default ID range from 10000 ~ 30000
-var currentPrjID uint32 = 10000
+var currentPrjID uint32
 
+// genPrjID generate project ID while add xfs project
 func genPrjID() string {
 	nextPrjID := atomic.AddUint32(&currentPrjID, 1)
 	return fmt.Sprintf("%d", nextPrjID)
+}
+
+func init() {
+	// get current max project ID
+	var maxProjID uint32
+
+	f, err := os.Open(FILE_PROJECTS)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	fileScanner := bufio.NewScanner(f)
+	fileScanner.Split(bufio.ScanLines)
+
+	for fileScanner.Scan() {
+		line := fileScanner.Text()
+		projID := strings.Split(line, ":")[0]
+
+		id, err := strconv.Atoi(projID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if uint32(id) > maxProjID {
+			maxProjID = uint32(id)
+		}
+	}
+
+	currentPrjID = maxProjID
+
+	println("Current max project ID is", currentPrjID)
 }

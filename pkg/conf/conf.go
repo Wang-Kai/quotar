@@ -14,9 +14,7 @@ import (
 	1. workspace, which is nfs export path, and xfs mount pointer
 */
 
-var (
-	WORKSPACE string
-)
+var WORKSPACE string
 
 func init() {
 	// set flag

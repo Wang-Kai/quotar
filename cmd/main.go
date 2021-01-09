@@ -10,6 +10,7 @@ import (
 	"github.com/Wang-Kai/quotar/pb"
 	_ "github.com/Wang-Kai/quotar/pkg/conf"
 	"github.com/Wang-Kai/quotar/pkg/svc"
+	_ "github.com/Wang-Kai/quotar/pkg/xfs"
 )
 
 const (

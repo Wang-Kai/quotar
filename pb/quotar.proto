@@ -4,7 +4,18 @@ package pb;
 
 service Quotar {
     rpc CreateDir (CreateDirReq) returns (CreateDirResp);
+    rpc DeleteDir (DeleteDirReq) returns (DeleteDirResp);
 }
+
+message DeleteDirReq {
+    string name = 1;
+}
+
+message DeleteDirResp {
+
+}
+
+
 
 message CreateDirReq {
     string name = 1;

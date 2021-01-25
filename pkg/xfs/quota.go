@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/Wang-Kai/quotar/pkg/conf"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -18,44 +19,43 @@ const (
 	FILE_PROJID   = "/etc/projid"
 )
 
+var prjManager *PrjManager
+
+func DeletePrj(name string) error {
+	// limit project quota to zero
+	if err := limitPrjQuota(name, "0"); err != nil {
+		return err
+	}
+
+	// remove project directory
+	if err := prjManager.Delete(name); err != nil {
+		return errors.Wrap(err, "delete project")
+	}
+
+	return nil
+}
+
 // CreatePrj
 func CreatePrj(name, quota string) error {
 	// create project directory
-	prjPath := fmt.Sprintf("%s/%s", conf.WORKSPACE, name)
-	if _, err := os.Stat(prjPath); os.IsNotExist(err) {
-		if err := os.Mkdir(prjPath, os.ModeDir|0755); err != nil {
+	dir := fmt.Sprintf("%s/%s", conf.WORKSPACE, name)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.Mkdir(dir, os.ModeDir|0755); err != nil {
 			return err
 		}
 	}
 
+	// generate project ID
 	var prjID = genPrjID()
 
-	// insert the mapping of project ID and directory
-	var mappingIDAndDir = fmt.Sprintf("%s:%s\n", prjID, prjPath)
-
-	projectsFilePointer, err := os.OpenFile(FILE_PROJECTS, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-	defer projectsFilePointer.Close()
-
-	_, err = projectsFilePointer.WriteString(mappingIDAndDir)
-	if err != nil {
-		return err
+	prj := &project{
+		name: name,
+		id:   prjID,
+		dir:  dir,
 	}
 
-	// insert the mapping of project name and project ID
-	var mappingNameAndID = fmt.Sprintf("%s:%s\n", name, prjID)
-
-	projidFilePointer, err := os.OpenFile(FILE_PROJID, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-	defer projidFilePointer.Close()
-
-	_, err = projidFilePointer.WriteString(mappingNameAndID)
-	if err != nil {
-		return err
+	if err := prjManager.Add(prj); err != nil {
+		return errors.Wrap(err, "add project")
 	}
 
 	// init xfs quota project
@@ -70,6 +70,17 @@ func CreatePrj(name, quota string) error {
 	limitQuotaExecCmd := exec.Command("sh", "-c", limitQuotaCmd)
 	if err := limitQuotaExecCmd.Run(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func limitPrjQuota(prjName, quota string) error {
+	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%s bhard=%s %s' %s", quota, quota, prjName, conf.WORKSPACE)
+
+	limitQuotaExecCmd := exec.Command("sh", "-c", limitQuotaCmd)
+	if err := limitQuotaExecCmd.Run(); err != nil {
+		return errors.Wrap(err, "limit project quota")
 	}
 
 	return nil
@@ -113,4 +124,7 @@ func init() {
 	currentPrjID = maxProjID
 
 	println("Current max project ID is", currentPrjID)
+
+	// init project mananger
+	prjManager = newPrjManager()
 }

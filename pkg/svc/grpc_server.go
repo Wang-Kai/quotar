@@ -7,6 +7,7 @@ import (
 	"github.com/Wang-Kai/quotar/pb"
 	"github.com/Wang-Kai/quotar/pkg/conf"
 	"github.com/Wang-Kai/quotar/pkg/xfs"
+	"github.com/pkg/errors"
 )
 
 type QuotarService struct {
@@ -26,4 +27,14 @@ func (q *QuotarService) CreateDir(ctx context.Context, req *pb.CreateDirReq) (*p
 	return &pb.CreateDirResp{
 		Path: dirPath,
 	}, nil
+}
+
+func (q *QuotarService) DeleteDir(ctx context.Context, req *pb.DeleteDirReq) (*pb.DeleteDirResp, error) {
+	fmt.Printf("Delete %s dir", req.Name)
+
+	if err := xfs.DeletePrj(req.Name); err != nil {
+		return nil, errors.Wrap(err, "Call DeletePrj func")
+	}
+
+	return &pb.DeleteDirResp{}, nil
 }

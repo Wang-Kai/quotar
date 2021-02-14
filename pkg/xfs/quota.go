@@ -1,13 +1,9 @@
 package xfs
 
 import (
-	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
-	"strconv"
-	"strings"
 	"sync/atomic"
 
 	"github.com/Wang-Kai/quotar/pkg/conf"
@@ -19,112 +15,96 @@ const (
 	FILE_PROJID   = "/etc/projid"
 )
 
-var prjManager *PrjManager
-
+// DeletePrj delete the project
+// 1. limit project quota to zero
+// 2. remove project directory if needed
+// 3. remove mapping info
 func DeletePrj(name string) error {
-	// limit project quota to zero
+	// limit Project quota to zero
 	if err := limitPrjQuota(name, "0"); err != nil {
 		return err
 	}
 
-	// remove project directory
+	// TODO: remove Project directory
+
+	// remove project info from mapping files
 	if err := prjManager.Delete(name); err != nil {
-		return errors.Wrap(err, "delete project")
+		return errors.Wrap(err, "delete Project")
 	}
 
 	return nil
 }
 
-// CreatePrj
+// CreatePrj create a new project
+// 1. create directory
+// 2. write project info into mapping files
+// 3. init xfs project
+// 4. limit project quota
 func CreatePrj(name, quota string) error {
-	// create project directory
+	// create Project directory
 	dir := fmt.Sprintf("%s/%s", conf.WORKSPACE, name)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.Mkdir(dir, os.ModeDir|0755); err != nil {
-			return err
-		}
+	if err := createPrjDir(dir); err != nil {
+		return err
 	}
 
-	// generate project ID
+	// generate Project ID
 	var prjID = genPrjID()
-
-	prj := &project{
+	prj := &Project{
 		name: name,
 		id:   prjID,
 		dir:  dir,
 	}
 
 	if err := prjManager.Add(prj); err != nil {
-		return errors.Wrap(err, "add project")
+		return errors.Wrap(err, "add Project")
 	}
 
-	// init xfs quota project
-	initQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'project -s %s' %s", name, conf.WORKSPACE)
+	// init xfs quota Project
+	if err := initPrjQuota(name, quota); err != nil {
+		return err
+	}
+
+	// limit Project quota
+	if err := limitPrjQuota(name, quota); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// initPrjQuota init the quota setting for prj project
+func initPrjQuota(prj, quota string) error {
+	initQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'Project -s %s' %s", prj, conf.WORKSPACE)
 	initQuotaExecCmd := exec.Command("bash", "-c", initQuotaCmd)
 	if err := initQuotaExecCmd.Run(); err != nil {
-		return err
-	}
-
-	// limit project quota
-	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%s bhard=%s %s' %s", quota, quota, name, conf.WORKSPACE)
-	limitQuotaExecCmd := exec.Command("sh", "-c", limitQuotaCmd)
-	if err := limitQuotaExecCmd.Run(); err != nil {
-		return err
+		return errors.Wrap(err, "init project quota")
 	}
 
 	return nil
 }
 
-func limitPrjQuota(prjName, quota string) error {
-	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%s bhard=%s %s' %s", quota, quota, prjName, conf.WORKSPACE)
+// limitPrjQuota execute xfs_quota command to limit prj to the size
+func limitPrjQuota(prj, size string) error {
+	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%s bhard=%s %s' %s", size, size, prj, conf.WORKSPACE)
 
 	limitQuotaExecCmd := exec.Command("sh", "-c", limitQuotaCmd)
 	if err := limitQuotaExecCmd.Run(); err != nil {
-		return errors.Wrap(err, "limit project quota")
+		return errors.Wrap(err, "limit Project quota")
 	}
 
 	return nil
 }
 
-var currentPrjID uint32
-
-// genPrjID generate project ID while add xfs project
+// genPrjID generate Project ID while add xfs Project
 func genPrjID() string {
-	nextPrjID := atomic.AddUint32(&currentPrjID, 1)
+	nextPrjID := atomic.AddUint32(&latestPrjID, 1)
 	return fmt.Sprintf("%d", nextPrjID)
 }
 
-func init() {
-	// get current max project ID
-	var maxProjID uint32
-
-	f, err := os.Open(FILE_PROJECTS)
-	if err != nil {
-		log.Fatal(err)
+// createPrjDir create directory with 0755 mode
+func createPrjDir(name string) error {
+	if err := os.Mkdir(name, os.ModeDir|0755); err != nil {
+		return errors.Wrapf(err, "create %s directory", name)
 	}
-	defer f.Close()
-
-	fileScanner := bufio.NewScanner(f)
-	fileScanner.Split(bufio.ScanLines)
-
-	for fileScanner.Scan() {
-		line := fileScanner.Text()
-		projID := strings.Split(line, ":")[0]
-
-		id, err := strconv.Atoi(projID)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if uint32(id) > maxProjID {
-			maxProjID = uint32(id)
-		}
-	}
-
-	currentPrjID = maxProjID
-
-	println("Current max project ID is", currentPrjID)
-
-	// init project mananger
-	prjManager = newPrjManager()
+	return nil
 }

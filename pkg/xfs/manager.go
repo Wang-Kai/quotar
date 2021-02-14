@@ -94,7 +94,6 @@ func (m *PrjManager) readMappingInfo() error {
 
 	// iterate all lines
 	for i := 0; i < len(lines); i++ {
-		fmt.Println(lines[i])
 		info := strings.Split(lines[i], ":")
 		name, id := info[0], info[1]
 		mappingIDToName[id] = name

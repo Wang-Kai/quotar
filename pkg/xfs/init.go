@@ -2,10 +2,11 @@ package xfs
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var latestPrjID uint32
@@ -21,7 +22,7 @@ func init() {
 
 	f, err := os.Open(FILE_PROJECTS)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer f.Close()
 
@@ -34,7 +35,7 @@ func init() {
 
 		id, err := strconv.Atoi(projID)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		if uint32(id) > maxProjID {
@@ -44,7 +45,7 @@ func init() {
 
 	latestPrjID = maxProjID
 
-	println("Latest project ID is: ", latestPrjID)
+	log.WithField("PrjID", latestPrjID).Info("Complete the finding latest projet ID task")
 
 	// init Project mananger
 	prjManager = NewPrjManager()

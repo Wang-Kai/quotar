@@ -8,6 +8,7 @@ import (
 
 	"github.com/Wang-Kai/quotar/pkg/conf"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -74,7 +75,13 @@ func CreatePrj(name, quota string) error {
 
 // initPrjQuota init the quota setting for prj project
 func initPrjQuota(prj, quota string) error {
-	initQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'Project -s %s' %s", prj, conf.WORKSPACE)
+	initQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'project -s %s' %s", prj, conf.WORKSPACE)
+	log.WithFields(log.Fields{
+		"project": prj,
+		"quota":   quota,
+		"command": initQuotaCmd,
+	}).Info("Init project quota")
+
 	initQuotaExecCmd := exec.Command("bash", "-c", initQuotaCmd)
 	if err := initQuotaExecCmd.Run(); err != nil {
 		return errors.Wrap(err, "init project quota")
@@ -84,12 +91,17 @@ func initPrjQuota(prj, quota string) error {
 }
 
 // limitPrjQuota execute xfs_quota command to limit prj to the size
-func limitPrjQuota(prj, size string) error {
-	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%s bhard=%s %s' %s", size, size, prj, conf.WORKSPACE)
+func limitPrjQuota(prj, quota string) error {
+	limitQuotaCmd := fmt.Sprintf("xfs_quota -x -c 'limit -p bsoft=%s bhard=%s %s' %s", quota, quota, prj, conf.WORKSPACE)
+	log.WithFields(log.Fields{
+		"project": prj,
+		"quota":   quota,
+		"command": limitQuotaCmd,
+	}).Info("Limit project quota")
 
 	limitQuotaExecCmd := exec.Command("sh", "-c", limitQuotaCmd)
 	if err := limitQuotaExecCmd.Run(); err != nil {
-		return errors.Wrap(err, "limit Project quota")
+		return errors.Wrap(err, "limit project quota")
 	}
 
 	return nil
@@ -103,6 +115,8 @@ func genPrjID() string {
 
 // createPrjDir create directory with 0755 mode
 func createPrjDir(name string) error {
+	log.WithField("directory", name).Info("Create project directoy")
+
 	if err := os.Mkdir(name, os.ModeDir|0755); err != nil {
 		return errors.Wrapf(err, "create %s directory", name)
 	}

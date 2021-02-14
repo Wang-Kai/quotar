@@ -8,14 +8,17 @@ import (
 	"github.com/Wang-Kai/quotar/pkg/conf"
 	"github.com/Wang-Kai/quotar/pkg/xfs"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type QuotarService struct {
 }
 
 func (q *QuotarService) CreateDir(ctx context.Context, req *pb.CreateDirReq) (*pb.CreateDirResp, error) {
-
-	fmt.Printf("Create %s dir, and with size %s\n", req.Name, req.Quota)
+	log.WithFields(log.Fields{
+		"name":  req.Name,
+		"quota": req.Quota,
+	}).Info("CreateDir request")
 
 	// create xfs project
 	if err := xfs.CreatePrj(req.Name, req.Quota); err != nil {
@@ -30,7 +33,7 @@ func (q *QuotarService) CreateDir(ctx context.Context, req *pb.CreateDirReq) (*p
 }
 
 func (q *QuotarService) DeleteDir(ctx context.Context, req *pb.DeleteDirReq) (*pb.DeleteDirResp, error) {
-	fmt.Printf("Delete %s dir", req.Name)
+	log.WithField("name", req.Name).Info("DeleteDir request")
 
 	if err := xfs.DeletePrj(req.Name); err != nil {
 		return nil, errors.Wrap(err, "Call DeletePrj func")

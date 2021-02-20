@@ -44,8 +44,12 @@ func DeletePrj(name string) error {
 func CreatePrj(name, quota string) error {
 	// create Project directory
 	dir := fmt.Sprintf("%s/%s", conf.WORKSPACE, name)
-	if err := createPrjDir(dir); err != nil {
-		return err
+
+	// if dir not exist, create it
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := createPrjDir(dir); err != nil {
+			return err
+		}
 	}
 
 	// generate Project ID

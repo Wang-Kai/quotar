@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-provisioner
+  labels:
+    app: nfs-provisioner
+spec:
+  selector:
+    matchLabels:
+      app: nfs-provisioner
+  template:
+    metadata:
+      labels:
+        app: nfs-provisioner
+    spec:
+      serviceAccount: nfs-quotar
+      containers:
+      - name: nfs-provisioner
+        image: {{ .Values.deploy.image }}
+        env:
+        - name: NFS_SERVER
+          value: {{ .Values.env.nfsServer }}
+        - name: QUOTAR_SERVER
+          value: {{ .Values.env.quotarServer }}
+        - name: PROVISIONER_NAME
+          value: {{ .Values.env.provisionerName }}

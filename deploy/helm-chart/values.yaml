@@ -1,0 +1,6 @@
+deploy:
+    image: uhub.service.ucloud.cn/sf_open/nfs-provisioner:v0.1.7
+env:
+    nfsServer: 106.75.223.111
+    quotarServer: 106.75.223.111:10013
+    provisionerName: steve

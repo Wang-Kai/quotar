@@ -1,17 +1,15 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/Wang-Kai/quotar/pb"
 
 	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 )
 
@@ -51,6 +49,7 @@ func init() {
 
 func main() {
 	clientset := genClientset()
+
 	serverVersion, err := clientset.Discovery().ServerVersion()
 	if err != nil {
 		klog.Fatalf("Error getting server version: %v", err)
@@ -69,18 +68,9 @@ func main() {
 }
 
 func genClientset() *kubernetes.Clientset {
-	var kubeconfig *string
-	if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 
 	// create the clientset
@@ -90,10 +80,4 @@ func genClientset() *kubernetes.Clientset {
 	}
 
 	return clientset
-}
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }

@@ -10,15 +10,14 @@ Quotar is the agent to create subdiretory and configure quota for it base on xfs
 ### 1. bind disk using xfs project quotas
 
 
-```bash
+```console
 $ lsblk
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 vda    253:0    0   40G  0 disk
 └─vda1 253:1    0   40G  0 part /
-vdb    253:16   0  300G  0 disk /data
-vdc    253:32   0  100G  0 disk
-$ mkfs.xfs /dev/vdc
-meta-data=/dev/vdc               isize=512    agcount=4, agsize=6553600 blks
+vdb    253:16   0  300G  0 disk
+$ mkfs.xfs /dev/vdb
+meta-data=/dev/vdb              isize=512    agcount=4, agsize=6553600 blks
          =                       sectsz=512   attr=2, projid32bit=1
          =                       crc=1        finobt=0, sparse=0
 data     =                       bsize=4096   blocks=26214400, imaxpct=25
@@ -32,7 +31,7 @@ $ mount -o prjquota  /dev/vdb /home
 
 Due to configuration will fail after operation system restart, so we will add setting to `/etc/fstab`
 
-```
+```console
 echo '/dev/vdb /home xfs defaults,prjquota 0 0' >> /etc/fstab
 ```
 
@@ -84,7 +83,7 @@ systemctl status quotar
 ### 4. install nfs-provisioner Helm Chart
 
 
-```bash
+```console
 cd deploy/helm-chart
 helm install nfs-quotar -n MY_NAMESPACE ./deploy/helm-chart
 ```

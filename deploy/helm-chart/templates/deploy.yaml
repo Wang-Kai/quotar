@@ -23,4 +23,4 @@ spec:
         - name: QUOTAR_SERVER
           value: {{ .Values.env.quotarServer }}
         - name: PROVISIONER_NAME
-          value: {{ .Values.env.provisionerName }}
+          value: {{ .Values.provisionerName | default "nfs-quotar" }}

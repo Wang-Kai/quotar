@@ -85,6 +85,6 @@ systemctl status quotar
 
 
 ```bash
-cd deply/helm-chart
-helm install nfs-quotar -n MY_NAMESPACE .
+cd deploy/helm-chart
+helm install nfs-quotar -n MY_NAMESPACE ./deploy/helm-chart
 ```

@@ -1,5 +1,5 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: nfs-with-quota
+  name: {{ .Values.storageClassName | default "nfs-quotar" }}
 provisioner: {{ .Values.provisionerName | default "nfs-quotar" }}

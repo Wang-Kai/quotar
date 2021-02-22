@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 /*
@@ -27,7 +28,9 @@ type PrjManager struct {
 }
 
 func NewPrjManager() *PrjManager {
-	return &PrjManager{}
+	return &PrjManager{
+		Items: []*Project{},
+	}
 }
 
 // Add insert or update prj info to projects and projid files
@@ -89,6 +92,18 @@ func (m *PrjManager) readMappingInfo() error {
 	if err != nil {
 		return errors.Wrap(err, "read projid file error")
 	}
+
+	// read /etc/Projects file
+	projectsFile, err := ioutil.ReadFile(FILE_PROJECTS)
+	if err != nil {
+		return errors.Wrap(err, "read Projects file error")
+	}
+
+	if len(projectsFile) == 0 || len(projidFile) == 0 {
+		log.Info("/etc/projects or /etc/projid is empty file")
+		return nil
+	}
+
 	mappingIDToName := make(map[string]string)
 	lines := strings.Split(string(projidFile), "\n")
 
@@ -99,13 +114,8 @@ func (m *PrjManager) readMappingInfo() error {
 		mappingIDToName[id] = name
 	}
 
-	// read /etc/Projects file
-	ProjectsFile, err := ioutil.ReadFile(FILE_PROJECTS)
-	if err != nil {
-		return errors.Wrap(err, "read Projects file error")
-	}
 	mappingIDToDir := make(map[string]string)
-	lines = strings.Split(string(ProjectsFile), "\n")
+	lines = strings.Split(string(projectsFile), "\n")
 
 	// iterate all lines but last empty line
 	for i := 0; i < len(lines); i++ {
@@ -129,6 +139,11 @@ func (m *PrjManager) readMappingInfo() error {
 }
 
 func (m *PrjManager) persistence() error {
+	if len(m.Items) == 0 {
+		log.Info("Nothing to persistence")
+		return nil
+	}
+
 	// prepare projid and Projects file content
 	var projidContent = make([]string, 0, len(m.Items))
 	var ProjectsContent = make([]string, 0, len(m.Items))
